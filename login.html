@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion — Plateforme Audio</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: rgba(18, 18, 18, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #8e8e93;
+            --accent-color: #ff453a; /* Rouge style Apple */
+            --accent-hover: #ff3b30;
+            --input-bg: #1c1c1e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .background-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255, 69, 58, 0.15) 0%, rgba(0,0,0,0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .auth-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .brand {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .brand p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--input-bg);
+            border: 1px solid transparent;
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(255, 69, 58, 0.2);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .toggle-link {
+            text-align: center;
+            font-size: 13px;
+            color: #0a84ff;
+            margin-top: 24px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toggle-link:hover {
+            opacity: 0.8;
+        }
+
+        .message-box {
+            font-size: 13px;
+            text-align: center;
+            margin-top: 16px;
+            min-height: 20px;
+            font-weight: 500;
+        }
+
+        .error { color: #ff453a; }
+        .success { color: #30d158; }
+    </style>
+</head>
+<body>
+
+<div class="background-glow"></div>
+
+<div class="auth-container">
+    <div class="brand">
+        <h1 id="form-title">Connexion</h1>
+        <p id="form-subtitle">Accède à ton espace audio</p>
+    </div>
+
+    <form id="auth-form">
+        <div class="input-group">
+            <label for="email">Adresse E-mail</label>
+            <input type="email" id="email" required autocomplete="email" placeholder="nom@exemple.com">
+        </div>
+        <div class="input-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" required autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <button type="submit" id="submit-btn">Se connecter</button>
+    </form>
+
+    <div class="toggle-link" id="toggle-auth">Pas encore de compte ? Créer un compte</div>
+    <div class="message-box" id="msg-box"></div>
+</div>
+
+<script>
+    // URL de ton API Cloudflare Worker (tu changeras ça quand ton Worker sera déployé)
+    const API_URL = "https://ton-worker.ton-nom.workers.dev"; 
+
+    let isLoginMode = true;
+
+    const form = document.getElementById('auth-form');
+    const toggleLink = document.getElementById('toggle-auth');
+    const formTitle = document.getElementById('form-title');
+    const formSubtitle = document.getElementById('form-subtitle');
+    const submitBtn = document.getElementById('submit-btn');
+    const msgBox = document.getElementById('msg-box');
+
+    // Alterne entre le mode Connexion et Inscription
+    toggleLink.addEventListener('click', () => {
+        isLoginMode = !isLoginMode;
+        
+        formTitle.innerText = isLoginMode ? "Connexion" : "Inscription";
+        formSubtitle.innerText = isLoginMode ? "Accède à ton espace audio" : "Rejoins la plateforme et partage tes sons";
+        submitBtn.innerText = isLoginMode ? "Se connecter" : "S'inscrire";
+        toggleLink.innerText = isLoginMode ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter";
+        
+        msgBox.innerText = "";
+        msgBox.className = "message-box";
+        form.reset();
+    });
+
+    // Envoi des données vers ton Worker Cloudflare
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        msgBox.innerText = "";
+        msgBox.className = "message-box";
+
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        // Choix de la route selon l'action
+        const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+
+        try {
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || "Une erreur est survenue");
+            }
+
+            if (isLoginMode) {
+                // Connexion OK : On stocke le token JWT fait par ton Worker
+                localStorage.setItem('auth_token', result.token);
+                msgBox.innerText = "Connexion réussie ! Redirection...";
+                msgBox.classList.add('success');
+                
+                setTimeout(() => {
+                    window.location.href = "/dashboard"; 
+                }, 1000);
+            } else {
+                // Inscription OK
+                msgBox.innerText = "Inscription réussie ! Tu peux maintenant te connecter.";
+                msgBox.classList.add('success');
+                // On simule un clic pour remettre le formulaire en mode Login
+                toggleLink.click();
+            }
+
+        } catch (err) {
+            msgBox.innerText = err.message;
+            msgBox.classList.add('error');
+        }
+    });
+</script>
+</body>
+</html>
